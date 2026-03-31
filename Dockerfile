@@ -34,7 +34,8 @@ RUN apt-get update \
   && apt-get install -y ubuntu-desktop fcitx-config-gtk gnome-tweak-tool gnome-usage \
   && apt-get purge -y --autoremove gnome-initial-setup \
   && apt-get clean \
-  && rm -rf /var/lib/apt/lists/*
+  && rm -rf /var/lib/apt/lists/* \
+  && sed -i 's/^Prompt=.*$/Prompt=never/' /etc/update-manager/release-upgrades
 
 # Remove unnecessary system targets
 # TODO remove more targets but make sure that startup completes and login promt is displayed when "docker run -it"
