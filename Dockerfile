@@ -89,14 +89,12 @@ RUN apt-get update && apt-get install -y sudo && apt-get clean && rm -rf /var/li
   echo "${USER} ALL=(ALL) NOPASSWD: ALL" > "/etc/sudoers.d/${USER}" && \
   chmod 440 "/etc/sudoers.d/${USER}"
 USER "${USER}"
-ENV USER="${USER}" \
-  HOME="/home/${USER}"
-WORKDIR "/home/${USER}"
 
 # Set up VNC
-RUN mkdir -p $HOME/.vnc
-COPY xstartup $HOME/.vnc/xstartup
-RUN echo "acoman" | vncpasswd -f >> $HOME/.vnc/passwd && chmod 600 $HOME/.vnc/passwd
+ARG HOME=/home/${USER}
+RUN mkdir -p ${HOME}/.vnc
+COPY xstartup ${HOME}/.vnc/xstartup
+RUN echo "acoman" | vncpasswd -f >> ${HOME}/.vnc/passwd && chmod 600 ${HOME}/.vnc/passwd
 
 # switch back to root to start systemd
 USER root
