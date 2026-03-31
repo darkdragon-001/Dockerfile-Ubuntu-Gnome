@@ -7,11 +7,11 @@ _The user branch adds some applications._
 
 This repository contains the *Dockerfile* and *associated files* for setting up a container with Ubuntu, GNOME 3, TigerVNC and noVNC.
 
-* The VNC Server currently defaults to 1366*768 24bit.
+* The VNC Server currently defaults to 1280x800.
 
 ### Dependencies
 
-* [ubuntu:20.04](https://hub.docker.com/_/ubuntu)
+* [ubuntu:24.04](https://hub.docker.com/_/ubuntu)
 
 
 ### Usage
@@ -22,8 +22,8 @@ This repository contains the *Dockerfile* and *associated files* for setting up 
 
       sudo docker run --name=ubuntu-gnome -d --rm \
         --tmpfs /run --tmpfs /run/lock --tmpfs /tmp \
-        --cgroupns=host --cap-add SYS_BOOT --cap-add SYS_ADMIN \
-        -v /sys/fs/cgroup:/sys/fs/cgroup \
+        --cgroupns=host -v /sys/fs/cgroup:/sys/fs/cgroup \
+        --cap-add SYS_BOOT --cap-add SYS_ADMIN -security-opt seccomp=unconfined --security-opt apparmor=unconfined \
         -p 5901:5901 -p 6901:6901 \
         darkdragon001/ubuntu-gnome-vnc
 
@@ -33,7 +33,7 @@ This repository contains the *Dockerfile* and *associated files* for setting up 
 
 * Open shell as user:
 
-      sudo docker exec -it -u default ubuntu-gnome bash
+      sudo docker exec -it -u ubuntu ubuntu-gnome bash
 
 * Stop container:
 
@@ -50,11 +50,6 @@ _**NOTE** The password is hardcoded to `acoman`._
 
 * Gain root access via `sudo`
 
-
-### Known issues
-
-* Sidebar/dock hidden by default
-* User switching / gdm3 not working
 
 ### Not tested
 

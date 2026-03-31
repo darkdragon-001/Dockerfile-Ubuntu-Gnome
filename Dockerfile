@@ -1,4 +1,4 @@
-FROM ubuntu:20.04 AS base
+FROM ubuntu:24.04 AS base
 
 ENV container=docker
 ENV DEBIAN_FRONTEND=noninteractive
@@ -50,33 +50,28 @@ RUN rm -f \
   /lib/systemd/system/sockets.target.wants/*udev* \
   /lib/systemd/system/sockets.target.wants/*initctl* \
   /lib/systemd/system/sysinit.target.wants/systemd-tmpfiles-setup* \
+  /lib/systemd/system/sssd* \
+  /lib/systemd/system/systemd-oomd.* \
+  /lib/systemd/system/systemd-resolved.service \
   /lib/systemd/system/systemd-update-utmp* \
-  /lib/systemd/system/systemd-resolved.service
+  /lib/systemd/system/tpm-udev.* \
+  /lib/systemd/system/upower.service
 
 # Install TigerVNC server
-# TODO set VNC port in service file > exec command
-# TODO check if it works with default config file
-# NOTE tigervnc because of XKB extension: https://github.com/i3/i3/issues/1983
+# TODO set VNC port via environment variables
 RUN apt-get update \
-  && apt-get install -y tigervnc-common tigervnc-scraping-server tigervnc-standalone-server tigervnc-viewer tigervnc-xorg-extension \
+  && apt-get install -y tigervnc-standalone-server \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
-# TODO fix PID problem: Type=forking would be best, but system daemon is run as root on startup
-#   ERROR tigervnc@:1.service: New main PID 233 does not belong to service, and PID file is not owned by root. Refusing.
-#   https://www.freedesktop.org/software/systemd/man/systemd.service.html#Type=
-#   https://www.freedesktop.org/software/systemd/man/systemd.unit.html#Specifiers
-#   https://wiki.archlinux.org/index.php/TigerVNC#Starting_and_stopping_vncserver_via_systemd
-# -> this should be fixed by official systemd file once released: https://github.com/TigerVNC/tigervnc/pull/838
-# TODO specify options like geometry as environment variables -> source variables in service via EnvironmentFile=/path/to/env
-# NOTE logout will stop tigervnc service -> need to manually start (gdm for graphical login is not working)
-COPY tigervnc@.service /etc/systemd/system/tigervnc@.service
-RUN systemctl enable tigervnc@:1
 EXPOSE 5901
+ARG DISPLAY=:1
+ARG USER=ubuntu
+RUN echo "${DISPLAY}=${USER}" >> /etc/tigervnc/vncserver.users
+RUN systemctl enable tigervncserver@${DISPLAY}.service
 
 # Install noVNC
-# TODO novnc depends on net-tools until version 1.1.0: https://github.com/novnc/noVNC/issues/1075
 RUN apt-get update && apt-get install -y \
-  net-tools novnc \
+  novnc \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/*
 RUN ln -s /usr/share/novnc/vnc_lite.html /usr/share/novnc/index.html
@@ -85,20 +80,18 @@ COPY novnc.service /etc/systemd/system/novnc.service
 RUN systemctl enable novnc
 EXPOSE 6901
 
-# Create unprivileged user
-# NOTE user hardcoded in tigervnc.service
-# NOTE alternative is to use libnss_switch and create user at runtime -> use entrypoint script
-ARG UID=1000
-ARG USER=default
-RUN useradd ${USER} -u ${UID} -U -d /home/${USER} -m -s /bin/bash
+# Set up unprivileged user
 RUN apt-get update && apt-get install -y sudo && apt-get clean && rm -rf /var/lib/apt/lists/* && \
   echo "${USER} ALL=(ALL) NOPASSWD: ALL" > "/etc/sudoers.d/${USER}" && \
   chmod 440 "/etc/sudoers.d/${USER}"
 USER "${USER}"
 
 # Set up VNC
+# - 'session=ubuntu-xorg' tells it to look for /usr/share/xsessions/ubuntu-xorg.desktop
+# - 'localhost=no' allows external connections
+# TODO how to set "-fg" (vncconfig "-nowin") to avoid showing the config window on startup?
 RUN mkdir -p /home/${USER}/.vnc
-COPY xstartup /home/${USER}/.vnc/xstartup
+RUN echo "session=ubuntu-xorg\ngeometry=1280x800\nlocalhost=no\nalwaysshared" > /home/${USER}/.vnc/config
 RUN echo "acoman" | vncpasswd -f >> /home/${USER}/.vnc/passwd && chmod 600 /home/${USER}/.vnc/passwd
 
 # switch back to root to start systemd
@@ -127,12 +120,12 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     code evince gimp inkscape libreoffice \
     firefox \
     imagemagick libimage-exiftool-perl exiv2 jhead \
-    acidrip avidemux-qt ffmpeg handbrake makemkv-bin makemkv-oss mediainfo mkvtoolnix mkvtoolnix-gui vcdimager vlc \
+    avidemux-qt ffmpeg handbrake makemkv-bin makemkv-oss mediainfo mkvtoolnix mkvtoolnix-gui vcdimager vlc \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/*
 # TODO modify settings/customizations
 
 # Set favoriate apps for dock
-USER default
-RUN dbus-launch gsettings set org.gnome.shell favorite-apps "['firefox.desktop', 'terminator.desktop', 'org.gnome.Nautilus.desktop', 'gnome-control-center.desktop']"
+USER ubuntu
+RUN dbus-launch gsettings set org.gnome.shell favorite-apps "['firefox.desktop', 'terminator.desktop', 'org.gnome.Nautilus.desktop', 'org.gnome.Settings.desktop']"
 USER root
