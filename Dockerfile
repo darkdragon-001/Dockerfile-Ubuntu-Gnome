@@ -24,3 +24,8 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/*
 # TODO modify settings/customizations
+
+# Set favoriate apps for dock
+USER default
+RUN dbus-launch gsettings set org.gnome.shell favorite-apps "['firefox.desktop', 'terminator.desktop', 'org.gnome.Nautilus.desktop', 'gnome-control-center.desktop']"
+USER root
