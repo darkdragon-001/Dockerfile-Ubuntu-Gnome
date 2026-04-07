@@ -1,5 +1,9 @@
 ## Ubuntu Desktop (GNOME 3) Dockerfile
 
+<<<<<<< HEAD
+=======
+_The user branch adds some applications._
+>>>>>>> refs/rewritten/user
 
 This repository contains the *Dockerfile* and *associated files* for setting up a container with Ubuntu, GNOME 3, TigerVNC and noVNC.
 
