@@ -30,12 +30,17 @@ CMD [ "/sbin/init" ]
 # Install GNOME
 # NOTE if you want plain gnome, use: "apt-get install -y --no-install-recommends gnome-session gnome-terminal"
 # NOTE initial setup uninstalled as disabling via /etc/gdm3/custom.conf stopped working: https://askubuntu.com/q/1028822/206608
-RUN apt-get update \
-  && apt-get install -y ubuntu-desktop fcitx-config-gtk gnome-tweak-tool gnome-usage \
-  && apt-get purge -y --autoremove gnome-initial-setup \
-  && apt-get clean \
-  && rm -rf /var/lib/apt/lists/* \
-  && sed -i 's/^Prompt=.*$/Prompt=never/' /etc/update-manager/release-upgrades
+RUN apt-get update && \
+  apt-get install -y ubuntu-desktop fcitx-config-gtk gnome-tweak-tool gnome-usage && \
+  apt-get purge -y --autoremove gnome-initial-setup && \
+  apt-get clean && \
+  rm -rf /var/lib/apt/lists/* && \
+  sed -i 's/^Prompt=.*$/Prompt=never/' /etc/update-manager/release-upgrades && \
+  dbus-launch gsettings set org.gnome.desktop.lockdown disable-lock-screen true && \
+  dbus-launch gsettings set org.gnome.desktop.screensaver lock-enabled false && \
+  dbus-launch gsettings set org.gnome.desktop.screensaver idle-activation-enabled false && \
+  dbus-launch gsettings set org.gnome.desktop.session idle-delay 0 && \
+  dbus-launch gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'nothing'
 
 # Remove unnecessary system targets
 # TODO remove more targets but make sure that startup completes and login promt is displayed when "docker run -it"
