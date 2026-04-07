@@ -31,7 +31,7 @@ CMD [ "/sbin/init" ]
 # NOTE if you want plain gnome, use: "apt-get install -y --no-install-recommends gnome-session gnome-terminal"
 # NOTE initial setup uninstalled as disabling via /etc/gdm3/custom.conf stopped working: https://askubuntu.com/q/1028822/206608
 RUN apt-get update && \
-  apt-get install -y ubuntu-desktop fcitx-config-gtk gnome-tweak-tool gnome-usage && \
+  apt-get install -y ubuntu-desktop && \
   apt-get purge -y --autoremove gnome-initial-setup && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/* && \
