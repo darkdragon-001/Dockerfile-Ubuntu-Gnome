@@ -102,11 +102,21 @@ FROM base AS user
 # TODO split and run build with --squash (wait for hub.docker.com support: https://github.com/docker/hub-feedback/issues/955)
 
 ### Install software
-# TODO chromium-browser uses snaps: https://github.com/ConSol/docker-headless-vnc-container/issues/137
+# Packages: avidemux chromium firefox
+RUN add-apt-repository -y ppa:xtradeb/apps
+# NOTE chromium-browser in Ubuntu package sources uses snaps since 19.10
+# NOTE firefox in Ubuntu package sources uses snaps since 22.04
+RUN echo '\
+Package: chromium firefox\
+Pin: release o=LP-PPA-xtradeb\
+Pin-Priority: 1001\
+' | sudo tee /etc/apt/preferences.d/avoid-snaps
+# Packages: code
 RUN wget -qO- https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --dearmor -o /usr/share/keyrings/packages.microsoft.gpg \
     && sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/usr/share/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
-RUN apt-add-repository -y ppa:xtradeb/apps          # avidemux
-RUN apt-add-repository -y ppa:heyarje/makemkv-beta  # makemkv-bin makemkv-oss
+# Packages: makemkv-bin makemkv-oss
+RUN apt-add-repository -y ppa:heyarje/makemkv-beta
+# Packages: mkvtoolnix mkvtoolnix-gui
 RUN wget -q -O /usr/share/keyrings/gpg-pub-moritzbunkus.gpg https://mkvtoolnix.download/gpg-pub-moritzbunkus.gpg \
     && sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/gpg-pub-moritzbunkus.gpg] https://mkvtoolnix.download/ubuntu/ $(. /etc/os-release && echo ${VERSION_CODENAME}) main" > /etc/apt/sources.list.d/mkvtoolnix.list'  # mkvtoolnix mkvtoolnix-gui
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
@@ -118,14 +128,17 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     git meld \
     terminator \
     code evince gimp inkscape libreoffice \
-    firefox \
+    chromium firefox \
     imagemagick libimage-exiftool-perl exiv2 jhead \
     avidemux-qt ffmpeg handbrake makemkv-bin makemkv-oss mediainfo mkvtoolnix mkvtoolnix-gui vcdimager vlc \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/*
+# Configure chromium
+RUN sed -i '/^Exec/ s/%U/--password-store=basic --no-sandbox %U/' /usr/share/applications/chromium.desktop
+
 # TODO modify settings/customizations
 
 # Set favoriate apps for dock
 USER ubuntu
-RUN dbus-launch gsettings set org.gnome.shell favorite-apps "['firefox.desktop', 'terminator.desktop', 'org.gnome.Nautilus.desktop', 'org.gnome.Settings.desktop']"
+RUN dbus-launch gsettings set org.gnome.shell favorite-apps "['chromium.desktop', 'firefox.desktop', 'terminator.desktop', 'org.gnome.Nautilus.desktop', 'org.gnome.Settings.desktop']"
 USER root
