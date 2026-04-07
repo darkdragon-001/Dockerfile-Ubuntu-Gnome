@@ -84,6 +84,9 @@ EXPOSE 6901
 RUN apt-get update && apt-get install -y sudo && apt-get clean && rm -rf /var/lib/apt/lists/* && \
   echo "${USER} ALL=(ALL) NOPASSWD: ALL" > "/etc/sudoers.d/${USER}" && \
   chmod 440 "/etc/sudoers.d/${USER}"
+# Set user password in case lock screen is shown (syntax "user:pass")
+# TODO find out under which conditions this is the case
+RUN echo "${USER}:${USER}" | chpasswd
 USER "${USER}"
 
 # Set up VNC
